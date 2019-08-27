@@ -61,4 +61,4 @@ hosts:
   - name: passbolt
     requirements:
       cores: 1
-      memory: 2
+      memory: 1
