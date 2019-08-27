@@ -1,0 +1,64 @@
+version: '1.0'
+services:
+  - name: db
+    type: mariadb
+    version: 10.4
+    configuration: StandAlone
+    database: passbolt
+    username: microweber
+    # Ask password on create
+    userPassword: null
+    password: null
+    ports:
+      - 3306
+    remoteAccess: false
+    deployTo:
+      - passbolt
+
+  - name: passboltapp
+    type: docker
+    image: passbolt/passbolt
+    version: latest
+    globalDeps: |
+      apt update
+      apt install rng-tools
+    ports:
+      - 80
+      - 443
+    remoteAccess: false
+    volumes:
+      - directory: /var/www/passbolt/config/gpg
+      - directory: /var/www/passbolt/webroot/img/public
+    localDeps: chown -R www-data:www-data /var/www/passbolt/webroot/img/public /var/www/passbolt/config/gpg
+    env:
+      ADMIN_EMAIL: null
+      ADMIN_FIRST_NAME: null
+      ADMIN_LAST_NAME : null
+      DATASOURCES_DEFAULT_HOST: "{{=service('db').getMasterAlias()}}"
+      DATASOURCES_DEFAULT_DATABASE: "{{=service('db').get('database')}}"
+      DATASOURCES_DEFAULT_USERNAME: "{{=service('db').get('username')}}"
+      DATASOURCES_DEFAULT_PASSWORD: "{{=service('db').get('userPassword')}}"
+      PASSBOLT_KEY_EMAIL: null
+    comments:
+      env:
+        ADMIN_EMAIL: Email of first Administrator
+    deployTo:
+      - passbolt
+
+  - name: web
+    type: nginx
+    version: 1.17
+    ports:
+      - 80
+      - 443
+    remoteAccess: true
+    serviceFiles:
+      - name: passboltapp
+    deployTo:
+      - passbolt
+
+hosts:
+  - name: passbolt
+    requirements:
+      cores: 1
+      memory: 2
